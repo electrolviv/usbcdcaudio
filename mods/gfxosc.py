@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView
 
 class Gfxosc:
 
-    def __init__(self, graphicsview : "QGraphicsView"):
+    def __init__(self, graphicsview : QGraphicsView):
         self.gv = graphicsview
         self.w, self.h = graphicsview.width() - 2, graphicsview.height() - 2
         self.pixmap = QPixmap(self.w, self.h)

@@ -1,16 +1,25 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
-from PyQt5 import QtWidgets, uic, QtCore
+# Deps: PyQt5
+# Deps: GStreamer
+# Deps: pyserial
+# Deps: audioread
+
 import sys
 import platform
 import serial
 import os
 
-# Deps: PyQt5, GStreamer, pyserial, audioread
+from PyQt5 import QtWidgets, QtCore
+from PyQt5 import uic
+
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QLabel, QProgressBar, QPushButton, QLineEdit, QGraphicsView, QGraphicsScene, QStyleFactory, \
-    QSlider
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QLabel, QPushButton, QLineEdit, QSlider
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QProgressBar
+from PyQt5.QtWidgets import QFileDialog, QStyleFactory
 
 from audiofile import AudioFile
 from gfxosc import Gfxosc
