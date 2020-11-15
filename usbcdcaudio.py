@@ -3,8 +3,8 @@
 
 # Deps: PyQt5
 # Deps: GStreamer
-# Deps: pyserial
-# Deps: audioread
+# Deps: pyserial    ( $ python3 -m pip install pyserial )
+# Deps: audioread   ( $ python3 -m pip install audioread )
 
 import sys
 import platform
@@ -21,8 +21,8 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 from PyQt5.QtWidgets import QProgressBar
 from PyQt5.QtWidgets import QFileDialog, QStyleFactory
 
-from audiofile import AudioFile
-from gfxosc import Gfxosc
+from mods.audiofile import AudioFile
+from mods.gfxosc import Gfxosc
 
 
 class MyWindow(QtWidgets.QMainWindow):
