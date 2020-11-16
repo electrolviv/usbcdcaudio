@@ -32,7 +32,7 @@ class AudioFile:
 
         return r
 
-    def read1k(self):
+    def read1k(self) -> []:
 
         # File end ?
         if not self.fileopen:
@@ -44,8 +44,8 @@ class AudioFile:
             for frame in self.handle:
                 srcdat = frame
                 break
-        except:
-            pass
+        except Exception as exc:
+            print(__file__, exc)
 
         if srcdat.__len__() < srclen:
             return []
