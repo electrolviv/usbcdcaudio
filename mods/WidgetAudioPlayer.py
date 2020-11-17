@@ -1,19 +1,26 @@
-import os
-import platform
-import serial
+from typing import Dict
 
-from PyQt5 import uic
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QLabel, QProgressBar, QPushButton, QLineEdit, QSlider, QFileDialog
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
+from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QLabel, QFrame, QWidget
+from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
 
-from mods.audiofile import AudioFile
-from mods.gfxosc import Gfxosc
+from WidgetAudioStat import WidgetAudioStat
+from WidgetBuffer import WidgetBuffer
+from WidgetMP3Frames import WidgetMP3Frames
+from WidgetPosition import WidgetPosition
+from WidgetSelectFile import WidgetSelectFile
+from WidgetSerialPort import WidgetSelectSerialPort
+from WidgetStereoOsc import WidgetStereoOsc
+
+from audiofile import AudioFile
 
 
-class WidgetAudioPlayer(QtWidgets.QMainWindow):
+class WidgetAudioPlayer(QWidget):
+
+    updateuicnt = 0
+
 
     def __init__(self):
 
@@ -21,113 +28,97 @@ class WidgetAudioPlayer(QtWidgets.QMainWindow):
 
         # Global Objects
         self.afile = AudioFile()
-        self.serial = serial.Serial()
 
         # setup
         self.timerrate = 10  # ms
         self.guirate   = 3   # xtimerrate
 
-        # Initialize UI Objects
-        self.labelFileName = QLabel()
-        self.progressBarBuffer = QProgressBar()
-        self.pushButtonSelectfile = QPushButton()
-        self.pushButtonReconnect  = QPushButton()
-        self.graphicsViewLogo  = QGraphicsView()
-        self.graphicsViewBoard = QGraphicsView()
-        self.lineEditComport = QLineEdit()
-        self.label_bsent = QLabel()
-        self.label_srate  = QLabel()
-        self.label_channels  = QLabel()
-        self.label_duration  = QLabel()
-        self.horizontalSliderPos = QSlider()
-
-        self.updateuicnt = 0
-        self.sentbytes   = 0
-
-        # Load UI
-        uic.loadUi('mods/mainwindow.ui', self)
 
         self.setWindowTitle("MP3-USB Audio Player")
 
-        self.gfxleft  = Gfxosc(self.graphicsViewLeft)
-        self.gfxright = Gfxosc(self.graphicsViewRight)
+        self.label_title = QLabel("USB CDC MP3 Audio Player")
+        self.customize_ui()
 
-        self.picture_to_qgview('img/elvivlogos.png', self.graphicsViewLogo, QSize(160, 48))
-        self.picture_to_qgview('img/brd.png', self.graphicsViewBoard, QSize(199, 119))
+        self.wdgAudioStat = WidgetAudioStat()
+        self.wdgSelectFile = WidgetSelectFile(self.on_file_selected)
+        self.wdgPosition = WidgetPosition()
+        self.wdgSerialPort = WidgetSelectSerialPort()
+        self.wdgBuffer = WidgetBuffer()
+        self.wdgOscLR = WidgetStereoOsc()
 
-        self.pushButtonSelectfile.clicked.connect(self.select_file)
+        self.wdgChunks = WidgetMP3Frames()
 
+        self.setLayout(self.genlayout())
 
         self.timer10ms = QtCore.QTimer(self)
         self.timer10ms.timeout.connect(self.timerevent)
         self.timer10ms.setSingleShot(False)
         self.timer10ms.start(10)
 
-
-    @staticmethod
-    def picture_to_qgview(fname : str, qgv : QGraphicsView, ssize : QSize) -> None:
-        pixmapscaled = QPixmap(fname).scaled(ssize, QtCore.Qt.IgnoreAspectRatio, QtCore.Qt.SmoothTransformation)
-        scene = QGraphicsScene()
-        scene.addPixmap(pixmapscaled)
-        qgv.setScene(scene)
-
-    @staticmethod
-    def seconds_to_time(s):
-        secs = int(s)
-        hours = int(secs / 3600)
-        secs = secs - (hours * 3600)
-        mins  = int(secs / 60)
-        secs = secs - (mins * 60)
-        r = '{0:02d}'.format(hours) + ':' + '{0:02d}'.format(mins) + ':' + '{0:02d}'.format(secs)
-        return r
+    def customize_ui(self):
+        self.label_title.setAlignment( Qt.AlignTop | Qt.AlignCenter )
+        self.label_title.setFixedHeight(42)
+        self.label_title.setFrameShape(QFrame.Box)
+        self.label_title.setFrameShadow(QFrame.Raised)
+        self.label_title.setFont(QFont('Arial', 14, 200, True))
 
 
-    def update_file_props(self, filename):
-        self.labelFileName.setText(os.path.basename(filename))
+    def genlayout(self):
+        lay = QHBoxLayout()
+        lay.addLayout(self.genlayout_main())
+        lay.addWidget(self.wdgChunks)
+        return lay
+
+
+    def genlayout_serial_buff(self):
+        lay = QHBoxLayout()
+        lay.addWidget(self.wdgSerialPort)
+        lay.addWidget(self.wdgBuffer)
+        return lay
+
+    def genlayout_main(self):
+
+        lay = QVBoxLayout()
+        lay.setAlignment(Qt.AlignTop)
+
+        lay.addWidget(self.label_title)
+        lay.addWidget(self.wdgAudioStat)
+        lay.addWidget(self.wdgSelectFile)
+        lay.addWidget(self.wdgPosition)
+        lay.addLayout(self.genlayout_serial_buff())
+        lay.addWidget(self.wdgOscLR)
+
+        return lay
+
+
 
     def timerevent(self):
 
-        if self.serial.isOpen():
+        if self.wdgSerialPort.isSerialPortOpen():
             self.ioproc()
         else:
-
-            try:
-                port = "COM4" if platform.system() == "Windows" else "/dev/ttyACM1"
-                baudrate = 1000000
-                self.serial = serial.Serial(port, baudrate)
-                print("Opened")
-
-            except serial.serialutil.SerialException:
-                pass
+            self.wdgSerialPort.ReopenPort()
 
 
-    def stat_update(self, bufval, buff):
-
-        self.progressBarBuffer.setValue(32-bufval)
-        self.label_bsent.setText( str( int(self.sentbytes / 1024)))
-        self.gfxleft.redraw(buff)
-        self.gfxright.redraw(buff)
-
-        # if buff.__len__():
-        #     self.progressBarFilepos.Increment()
-        #            self.progressBarFilepos.setMinimum(0)
-        #            self.progressBarFilepos.setValue(0)
-        #            self.progressBarFilepos.setMaximum()
+    def stat_update(self, inbufval : int, buff : bytes) -> None:
+        self.wdgAudioStat.setParam({'bsent' : len(buff)})
+        self.wdgBuffer.setValue(inbufval)
+        self.wdgOscLR.update_osc_data(buff)
 
     def ioproc(self):
 
-        byte = self.serial.read_all()
-        if byte.__len__() < 1:
+        inbuff = self.wdgSerialPort.ReadSerial()
+
+        if not inbuff:
             return
 
-        bufval = int(byte[-1])
-
+        bufval = int(inbuff[-1])
         if bufval < 2:
             return
 
-        buff = self.afile.read1k()
-        self.serial.write(buff)
-        self.sentbytes = self.sentbytes + buff.__len__()
+        outbuff = self.afile.read1k()
+
+        self.wdgSerialPort.WriteSerial(outbuff)
 
         # UI update 1/5 sec
         self.updateuicnt = self.updateuicnt + 1
@@ -135,24 +126,16 @@ class WidgetAudioPlayer(QtWidgets.QMainWindow):
             return
 
         self.updateuicnt = 0
-        self.stat_update(bufval, buff)
+        self.stat_update(bufval, outbuff)
 
 
-    def select_file(self):
+    def on_file_selected(self, jcmd : Dict):
 
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        caption = "QFileDialog.getOpenFileName()"
-        mask = "MP3 Files (*.mp3);; (*.*)"
-        filename, _ = QFileDialog.getOpenFileName(self, caption, "", mask, options=options)
+        print("File Selected", jcmd)
 
-        if not filename:
-            return
+        filename = jcmd['open-file']
 
-        self.update_file_props(filename)
         self.afile.set_file(filename)
+        self.wdgChunks.scanChunks(filename)
 
-        # Update File Info
-        self.label_srate.setText(    str(self.afile.handle.samplerate) )
-        self.label_channels.setText( str(self.afile.handle.channels) )
-        self.label_duration.setText( self.seconds_to_time(self.afile.handle.duration) )
+        self.wdgAudioStat.setParam({ 'sample-rate' : 33000 })

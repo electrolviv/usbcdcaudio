@@ -1,17 +1,18 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# Deps: PyQt5
-# Deps: GStreamer
-# Deps: pyserial    ( $ python3 -m pip install pyserial )
-# Deps: audioread   ( $ python3 -m pip install audioread )
-
-import sys
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QStyleFactory
-from mods.WidgetAudioPlayer import WidgetAudioPlayer
 
 if __name__ == "__main__":
+
+    import sys
+    from PyQt5 import QtWidgets
+    from PyQt5.QtWidgets import QStyleFactory
+
+    sys.path.append('mods')
+    sys.path.append('mods/gui')
+
+    from mods.WidgetAudioPlayer import WidgetAudioPlayer
+
 
     app = QtWidgets.QApplication([])
     app.setStyle(QStyleFactory.create('oxygen'))
