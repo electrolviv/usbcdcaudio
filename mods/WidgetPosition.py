@@ -8,6 +8,10 @@ class WidgetPosition(QWidget):
         super(WidgetPosition, self).__init__()
         self.gbox = QGroupBox("Position")
         self.horizontalSliderPos = QSlider(Qt.Horizontal)
+        self.horizontalSliderPos.setMinimum(0)
+        self.horizontalSliderPos.setValue(0)
+        self.horizontalSliderPos.setMaximum(100)
+
         self.setLayout(self.genlayout())
 
 

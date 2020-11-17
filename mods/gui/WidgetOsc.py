@@ -48,8 +48,8 @@ class WidgetOsciloscope(QWidget):
 
             for i in range(1, pxls):
 
-                v0 = buff[i-1]
-                v1 = buff[i]
+                v0 = buff[i-1] - 127
+                v1 = buff[i]   - 127
 
                 dy0 = v0 * ky
                 dy1 = v1 * ky
@@ -63,7 +63,7 @@ class WidgetOsciloscope(QWidget):
 
     def setbuff(self, buff : []) -> None:
         self.buff = copy.copy(buff)
-
+        self.update()
 
 
 if __name__ == '__main__':

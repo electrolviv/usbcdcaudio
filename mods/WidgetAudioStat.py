@@ -1,9 +1,9 @@
 from typing import Dict
 
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtWidgets import QWidget, QGraphicsView, QHBoxLayout, QVBoxLayout, QLabel, QFrame
+from PyQt5.QtWidgets import QWidget, QGraphicsView, QHBoxLayout, QVBoxLayout, QLabel
 
-from misc import picture_to_qgview
+from mods.misc import picture_to_qgview
 
 
 # self.label_bsent = QLabel()
@@ -17,9 +17,24 @@ class WidgetAudioStat(QWidget):
     logo_width = 200
     logo_height = 140
 
+    arr = [ ['Bytes Sent',          'KBytes'    ],
+            ['Sample Rate',         'kHz'       ],
+            ['Channels',            'Mono'      ],
+            ['Duration',            'sec'       ] ]
+
+    sentbytes = 0
+
     def __init__(self):
 
         super(WidgetAudioStat, self).__init__()
+
+        self.labels = []
+        for idx in range(len(self.arr)):
+            lbl = QLabel("-")
+            lbl.setMinimumWidth(60)
+            lbl.setAlignment(Qt.AlignRight)
+            self.labels.append(lbl)
+
 
         self.graphicsViewLogo  = QGraphicsView()
         self.graphicsViewLogo.setFixedSize(self.logo_width + 2, self.logo_height + 2)
@@ -40,58 +55,51 @@ class WidgetAudioStat(QWidget):
 
     def genlayout(self):
 
-        arr = [
-            'Bytes Sent',
-            'Sample Rate',
-            'Channels',
-            'Duration' ]
-
-        arr3 = [
-            'KBytes',
-            'kHz',
-            'Mono',
-            'sec' ]
-
-        tmp1 = QVBoxLayout()
-        tmp1.setAlignment(Qt.AlignTop)
-
-        tmp2 = QVBoxLayout()
-        tmp2.setAlignment(Qt.AlignTop)
-
-        tmp3 = QVBoxLayout()
-        tmp3.setAlignment(Qt.AlignTop)
-
-
-        for txt in arr:
-            lbl = QLabel(txt)
-            tmp1.addWidget(lbl)
-
-            lbl = QLabel("0")
-            lbl.setMinimumWidth(60)
-            lbl.setAlignment(Qt.AlignRight)
-            tmp2.addWidget(lbl)
-
-        for txt in arr3:
-            tmp3.addWidget(QLabel(txt))
-
-        tmp = QHBoxLayout()
-        tmp.setAlignment(Qt.AlignTop)
-        tmp.setContentsMargins(12, 4, 12, 4)
-        tmp.addLayout(tmp1, 50)
-        tmp.addLayout(tmp2, 25)
-        tmp.addLayout(tmp3, 25)
-
         lay = QHBoxLayout()
         lay.setAlignment(Qt.AlignTop)
         lay.setContentsMargins(0, 8, 0, 4)
         lay.addWidget(self.graphicsViewLogo, 35)
-        lay.addLayout(tmp, 30)
+        lay.addLayout(self.genlayout_stat(), 30)
         lay.addWidget(self.graphicsViewBoard, 35)
 
         return lay
 
+
+    def genlayout_stat(self):
+
+        lay = QVBoxLayout()
+        lay.setAlignment(Qt.AlignTop)
+        lay.setContentsMargins(12, 4, 12, 4)
+
+        for idx in range(len(self.arr)):
+
+            lbl_info = QLabel(self.arr[idx][0])
+            lbl_info.setMinimumWidth(140)
+
+            lbl_val = self.labels[idx]
+            lbl_units = QLabel(self.arr[idx][1])
+
+            tmp = QHBoxLayout()
+            tmp.addWidget(lbl_info,  60)
+            tmp.addWidget(lbl_val,   20)
+            tmp.addWidget(lbl_units, 20)
+
+            lay.addLayout(tmp)
+
+        return lay
+
     def setParam(self, jparam : Dict):
-        print(jparam)
+
+        if 'bsent' in jparam:
+            self.sentbytes = self.sentbytes + jparam['bsent']
+            self.labels[0].setText(str(int(self.sentbytes / 1024)))
+
+        elif 'sample-rate' in jparam:
+            self.labels[1].setText( str(jparam['sample-rate']))
+
+        else:
+            print(jparam)
+            raise ValueError
 
         # Update File Info
         # self.label_srate.setText(    str(self.afile.handle.samplerate) )

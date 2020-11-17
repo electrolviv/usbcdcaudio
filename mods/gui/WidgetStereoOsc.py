@@ -24,3 +24,7 @@ class WidgetStereoOsc(QWidget):
         lay.addWidget(self.wdgOscL)
         lay.addWidget(self.wdgOscR)
         return lay
+
+    def update_osc_data(self, buff : bytes) -> None:
+        self.wdgOscL.setbuff(buff)
+        self.wdgOscR.setbuff(buff)

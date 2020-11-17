@@ -41,8 +41,19 @@ class WidgetSelectSerialPort(QWidget):
 
         try:
             baudrate = 1000000
-            self.serial = serial.Serial(self.lineEditComport.text(), baudrate)
+            serialname = self.lineEditComport.text()
+            self.serial = serial.Serial(serialname, baudrate)
             print("Opened")
 
         except serial.serialutil.SerialException:
             pass
+
+    def ReadSerial(self) -> []:
+        byte = self.serial.read_all()
+        if byte.__len__() < 1:
+            return []
+        return byte
+
+    def WriteSerial(self, buff : []) -> bool:
+        self.serial.write(buff)
+        return True

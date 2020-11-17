@@ -1,13 +1,9 @@
-import os
-import platform
 from typing import Dict
 
-import serial
-
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QLabel, QPushButton, QSlider, QFrame, QWidget
+from PyQt5.QtWidgets import QLabel, QFrame, QWidget
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
 
 from WidgetAudioStat import WidgetAudioStat
@@ -17,15 +13,13 @@ from WidgetPosition import WidgetPosition
 from WidgetSelectFile import WidgetSelectFile
 from WidgetSerialPort import WidgetSelectSerialPort
 from WidgetStereoOsc import WidgetStereoOsc
-from mods.audiofile import AudioFile
+
+from audiofile import AudioFile
 
 
 class WidgetAudioPlayer(QWidget):
 
-    class Runtimestat:
-        updateuicnt = 0
-        sentbytes   = 0
-
+    updateuicnt = 0
 
 
     def __init__(self):
@@ -43,11 +37,7 @@ class WidgetAudioPlayer(QWidget):
         self.setWindowTitle("MP3-USB Audio Player")
 
         self.label_title = QLabel("USB CDC MP3 Audio Player")
-        self.label_title.setAlignment( Qt.AlignTop | Qt.AlignCenter )
-        self.label_title.setFixedHeight(42)
-        self.label_title.setFrameShape(QFrame.Box)
-        self.label_title.setFrameShadow(QFrame.Raised)
-        self.label_title.setFont(QFont('Arial', 14, 200, True))
+        self.customize_ui()
 
         self.wdgAudioStat = WidgetAudioStat()
         self.wdgSelectFile = WidgetSelectFile(self.on_file_selected)
@@ -64,6 +54,13 @@ class WidgetAudioPlayer(QWidget):
         self.timer10ms.timeout.connect(self.timerevent)
         self.timer10ms.setSingleShot(False)
         self.timer10ms.start(10)
+
+    def customize_ui(self):
+        self.label_title.setAlignment( Qt.AlignTop | Qt.AlignCenter )
+        self.label_title.setFixedHeight(42)
+        self.label_title.setFrameShape(QFrame.Box)
+        self.label_title.setFrameShadow(QFrame.Raised)
+        self.label_title.setFont(QFont('Arial', 14, 200, True))
 
 
     def genlayout(self):
@@ -103,33 +100,25 @@ class WidgetAudioPlayer(QWidget):
             self.wdgSerialPort.ReopenPort()
 
 
-    def stat_update(self, bufval, buff):
-
-        self.progressBarBuffer.setValue(32-bufval)
-        self.label_bsent.setText( str( int(self.sentbytes / 1024)))
-        self.gfxleft.redraw(buff)
-        self.gfxright.redraw(buff)
-
-        # if buff.__len__():
-        #     self.progressBarFilepos.Increment()
-        #            self.progressBarFilepos.setMinimum(0)
-        #            self.progressBarFilepos.setValue(0)
-        #            self.progressBarFilepos.setMaximum()
+    def stat_update(self, inbufval : int, buff : bytes) -> None:
+        self.wdgAudioStat.setParam({'bsent' : len(buff)})
+        self.wdgBuffer.setValue(inbufval)
+        self.wdgOscLR.update_osc_data(buff)
 
     def ioproc(self):
 
-        byte = self.serial.read_all()
-        if byte.__len__() < 1:
+        inbuff = self.wdgSerialPort.ReadSerial()
+
+        if not inbuff:
             return
 
-        bufval = int(byte[-1])
-
+        bufval = int(inbuff[-1])
         if bufval < 2:
             return
 
-        buff = self.afile.read1k()
-        self.serial.write(buff)
-        self.sentbytes = self.sentbytes + buff.__len__()
+        outbuff = self.afile.read1k()
+
+        self.wdgSerialPort.WriteSerial(outbuff)
 
         # UI update 1/5 sec
         self.updateuicnt = self.updateuicnt + 1
@@ -137,7 +126,7 @@ class WidgetAudioPlayer(QWidget):
             return
 
         self.updateuicnt = 0
-        self.stat_update(bufval, buff)
+        self.stat_update(bufval, outbuff)
 
 
     def on_file_selected(self, jcmd : Dict):
