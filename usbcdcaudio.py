@@ -10,8 +10,12 @@ if __name__ == "__main__":
 
     sys.path.append('mods')
     sys.path.append('mods/gui')
+    sys.path.append('mods/widgets')
+    sys.path.append('mods/widgets/audio')
+    sys.path.append('mods/widgets/fsys')
+    sys.path.append('mods/widgets/periph')
 
-    from mods.WidgetAudioPlayer import WidgetAudioPlayer
+    from WidgetAudioPlayer import WidgetAudioPlayer
 
 
     app = QtWidgets.QApplication([])
